@@ -10,15 +10,15 @@ vb <- function(linf, k, t0, age) {
 # curve(vb(linf, k, x, 0), 0, 150)
 
 # define an sse function that we can minimize on
-vb.optimizer <- function(b, age) {
+vb_optimizer <- function(b, age) {
     linf <- b[1];
     k <- b[2];
     t0 <- b[3];
     return(vb(linf, k, t0, age))
 }
 
-vb.sse <- function(b, length, age) {
-    lhat <- vb.optimizer(b, age);
+vb_sse <- function(b, length, age) {
+    lhat <- vb_optimizer(b, age);
     return(sum((length-lhat)^2));
 }
 
@@ -28,7 +28,7 @@ vb.sse <- function(b, length, age) {
 # # performing a nonlinear minimization on parameters to fit this vb curve to data better
 # t <- #read in some age data
 # l <- #read in some length data
-# vbMin <- nlm(sse, c(150, 0.13, -1))
+# vbMin <- nlm(vb_sse, c(150, 0.13, -1))
 # 
 # # visualize the output
 # #plot(mean~age, data=la)

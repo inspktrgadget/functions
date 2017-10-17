@@ -120,6 +120,37 @@ init.params <- function(params.data, switch, value,
     else {return(params.data)}
 }
 
+# function to output recruitment function for spawnfile
+# this should be generalized to accept any recruitment function
+bevHoltRec <- function(stock_data) {
+    "bevertonholt" %>%
+        c(paste0("#", stock_data[[1]]$stockname, ".bh.mu")) %>%
+        c(paste0("#", stock_data[[1]]$stockname, ".bh.lam")) %>%
+        paste(., sep = "\t")
+}
+
+# function to set up spawnfile
+spawnfile <- function(stock_data, start_year, end_year, ...) {
+    argslist <- list(
+        spawnsteps = 1,
+        spawnareas = stock_data[[1]]$livesonareas,
+        firstspawnyear = start_year,
+        lastspawnyear = end_year,
+        spawstocksandratios = paste(stock_data[[1]]$stockname, 1, sep = "\t"),
+        proportionfunction = paste("constant", 1, sep = "\t"),
+        mortalityfunction = paste("constant", 1, sep = "\t"),
+        recruitment = bevHoltRec(stock_data),
+        stockparameters = paste0(stock_data$doesgrow$growthparameters,
+                                 collapse = "\t")
+    )
+    override_defaults <- list(...)
+    if (any(names(override_defaults) %in% names(argslist))) {
+        names2override <- intersect(names(argslist), names(override_defaults))
+        argslist[names2override] <- override_defaults[names2override] 
+    }
+    return(call("gadgetfile", "spawnfile", component = list(argslist)))
+}
+
 standard.age.factor <- 'exp(-1*(%2$s.M+%3$s.init.F)*%1$s)*%2$s.init.%1$s'
 andy.age.factor <- '(%2$s.age.alpha * exp((-1)  * (((log(%1$s)) - %2$s.age.beta) * ((log(%1$s)) - %2$s.age.beta) / %2$s.age.gamma)) + %2$s.age.delta)'
 gamma.age.factor <- '(%1$s / ((%2$s.age.alpha - 1) * (%2$s.age.beta * %2$s.age.gamma))) ** (%2$s.age.alpha - 1) * exp(%2$s.age.alpha - 1 - (%1$s / (%2$s.age.beta * %2$s.age.gamma)))'
