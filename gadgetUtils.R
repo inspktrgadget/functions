@@ -78,7 +78,7 @@ surveydist_suit <- function(pred='survey',
 }
 
 
-init.age.factor <- function(age, m, age.scalar, init.min) {
+init_age_factor <- function(age, m, age.scalar, init.min) {
     expr <- as.quoted(paste('exp(((-1) *', 
                             m, 
                             ') * ', 
@@ -92,7 +92,7 @@ init.age.factor <- function(age, m, age.scalar, init.min) {
     sapply(expr, to.gadget.formulae)
 }
 
-m.estimate.formula <- function(age, m, max.m, min.m) {
+m_estimate_formula <- function(age, m, max.m, min.m) {
     expr <- as.quoted(paste('exp(((-1) *', 
                             m, 
                             ') * ', 
@@ -136,9 +136,10 @@ spawnfile <- function(stock_data, start_year, end_year, ...) {
         spawnareas = stock_data[[1]]$livesonareas,
         firstspawnyear = start_year,
         lastspawnyear = end_year,
-        spawstocksandratios = paste(stock_data[[1]]$stockname, 1, sep = "\t"),
+        spawnstocksandratios = paste(stock_data[[1]]$stockname, 1, sep = "\t"),
         proportionfunction = paste("constant", 1, sep = "\t"),
-        mortalityfunction = paste("constant", 1, sep = "\t"),
+        mortalityfunction = paste("constant", 0, sep = "\t"),
+	weightlossfunction = paste("constant", 0, sep = "\t"),
         recruitment = bevHoltRec(stock_data),
         stockparameters = paste0(stock_data$doesgrow$growthparameters,
                                  collapse = "\t")

@@ -1,17 +1,17 @@
-vb.simple <- function(linf, k, recl, age) {
+vb_simple <- function(linf, k, recl, age) {
     linf * (1 - (exp(((-1)*k) * (age - (1 + ((log (1 - (recl / linf))) / k))))))
 }
 
-vb.simple.optimizer <- function(data, age) {
+vb_simple_optimizer <- function(data, age) {
     linf <- data[1];
     k <- data[2];
     recl <- data[3];
-    return(vb.simple(linf, k, recl, age))
+    return(vb_simple(linf, k, recl, age))
 }
 
-vb.simple.sse <- function(data, length, age) {
-    l.hat <- vb.simple.optimizer(data, age)
-    return(sum((l.hat - length)^2))
+vb_simple_sse <- function(data, length, age) {
+    l_hat <- vb_simple_optimizer(data, age)
+    return(sum((l_hat - length)^2))
 }
 
 # ## optimizing paramter values for gadget zbraInit
