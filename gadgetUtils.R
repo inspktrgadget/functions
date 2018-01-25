@@ -1,112 +1,126 @@
 # handy wrapper functions for producing gadget files in association with Rgadget
-vonb_formula <- function(age, linf, k, recl) {
+vonb_formula <- function(linf, k, recl, age) {
     vonb <- 
         as.quoted(
             paste0(linf,
-                   '* (1 - exp((-1 *',
+                   "* (1 - exp((-1 *",
                    k,
-                   ') * (',
+                   ") * (",
                    age,
-                   '- (1 + (log(1 - (',
+                   "- (1 + (log(1 - (",
                    recl,
-                   '/',
+                   "/",
                    linf,
-                   ')))/',
+                   ")))/",
                    k,
-                   '))))'))
+                   "))))"))
     sapply(vonb, to.gadget.formulae)
 }
 
 ## functions to write suitability lines
 # fleet suitability
-fleet_suit <- function(fleet='comm', 
+fleet_suit <- function(fleet="comm", 
                        stock=NULL, 
-                       fun='exponentiall50', 
-                       params=NULL) {
-    paste0('\n',
-           paste(stock, 'function', fun, 
-                 ifelse(is.numeric(params),
-                        params,
-                        do.call(paste, lapply(params, function(x) {
-                            if (is.numeric(x)) {
-                                return(x)
-                            } else {
-                                sprintf('#%1$s.%2$s.%3$s',
-                                        stock, fleet, x)
-                            }
-                        }))),
-                 sep='\t'))
+                       fun="exponentiall50", 
+                       params=NULL,
+                       sep_stock_params = FALSE,
+                       param_names = stock[1]) {
+    if (sep_stock_params) {
+        params2paste <- 
+            do.call("paste", 
+                    lapply(stock, function(x) {
+                        lapply(params, function(y) {
+                            if (is.numeric(y)) {
+                                return(y)
+                            } else {sprintf("#%1$s.%2$s.%3$s",
+                                        x, fleet, y)}
+                    })
+                }))
+    } else {
+        params2paste <- 
+            do.call("paste",
+                    lapply(params, function(x) {
+                        if (is.numeric(x)) {
+                            return(x)
+                        } else {
+                            sprintf("#%1$s.%2$s.%3$s",
+                                    param_names, fleet, x)
+                        }
+                    }))
+    }
+    fun_call <- paste(stock, "function", fun, params2paste, sep = "\t")
+    return(paste0("\n", fun_call))
 }
 
 # predator suitability
-pred_suit <- function(pred='comm', 
+pred_suit <- function(pred="comm", 
                       stock=NULL, 
-                      fun='newexponentiall50', 
+                      fun="newexponentiall50", 
                       params=NULL) {
-    paste0('\n',
-           paste(stock, 'function', fun, 
+    paste0("\n",
+           paste(stock, "function", fun, 
                  ifelse(is.numeric(params),
                         params,
                         do.call(paste, lapply(params, function(x) {
                             if (is.numeric(x)) {
                                 return(x)
                             } else {
-                                sprintf('#%1$s.%2$s.%3$s',
+                                sprintf("#%1$s.%2$s.%3$s",
                                         stock, pred, x)
                             }
                         }))),
-                 sep='\t'))
+                 sep="\t"))
 }
 
 # surveydistribution suitability
-surveydist_suit <- function(pred='survey',
+surveydist_suit <- function(pred="survey",
                             stock=NULL,
-                            fun='newexponentiall50',
+                            fun="newexponentiall50",
                             params=NULL) {
-    paste0(paste('function', fun, 
+    paste0(paste("function", fun, 
                  ifelse(is.numeric(params),
                         params,
                         do.call(paste, lapply(params, function(x) {
                             if (is.numeric(x)) {
                                 return(x)
                             } else {
-                                sprintf('#%1$s.%2$s.%3$s',
+                                sprintf("#%1$s.%2$s.%3$s",
                                         stock, pred, x)
                             }
                         }))),
-                 sep='\t'))
+                 sep="\t"))
 }
 
 
-init_age_factor <- function(age, m, age.scalar, init.min) {
-    expr <- as.quoted(paste('exp(((-1) *', 
-                            m, 
-                            ') * ', 
+init_age_factor <- function(init_max, init_min, init_decay, age) {
+    expr <- as.quoted(paste("exp(((-1) *", 
+                            init_decay, 
+                            ") * ", 
                             age, 
-                            ') * (', 
-                            age.scalar,
-                            ' - ',
-                            init.min,
-                            ') + ',
-                            init.min))
+                            ") * (", 
+                            init_max,
+                            " - ",
+                            init_min,
+                            ") + ",
+                            init_min))
     sapply(expr, to.gadget.formulae)
 }
 
-m_estimate_formula <- function(age, m, max.m, min.m) {
-    expr <- as.quoted(paste('exp(((-1) *', 
-                            m, 
-                            ') * ', 
+m_estimate_formula <- function(max_m, min_m, m_decay, age) {
+    expr <- as.quoted(paste("exp(((-1) *", 
+                            m_decay, 
+                            ") * ", 
                             age, 
-                            ') * (', 
-                            max.m,
-                            ' - ',
-                            min.m,
-                            ') + ',
-                            min.m))
+                            ") * (", 
+                            max_m,
+                            " - ",
+                            min_m,
+                            ") + ",
+                            min_m))
     sapply(expr, to.gadget.formulae)
 }
 
-init.params <- function(params.data, switch, value, 
+init_params <- function(params.data, switch, value, 
                         lower.bound, upper.bound, optimise) {
     w.switch <- grep(switch, params.data$switch);
     if (length(w.switch) != 0) {
@@ -139,10 +153,13 @@ spawnfile <- function(stock_data, start_year, end_year, ...) {
         spawnstocksandratios = paste(stock_data[[1]]$stockname, 1, sep = "\t"),
         proportionfunction = paste("constant", 1, sep = "\t"),
         mortalityfunction = paste("constant", 0, sep = "\t"),
-	weightlossfunction = paste("constant", 0, sep = "\t"),
+	    weightlossfunction = paste("constant", 0, sep = "\t"),
         recruitment = bevHoltRec(stock_data),
-        stockparameters = paste0(stock_data$doesgrow$growthparameters,
-                                 collapse = "\t")
+        stockparameters = paste(sprintf("#%s.rec.len", stock_data[[1]]$stockname),
+                                sprintf("#%s.rec.sd", stock_data[[1]]$stockname),
+                                paste0(stock_data$doesgrow$growthparameters[3:4], 
+                                       collapse = "\t"),
+                                sep = "\t")
     )
     override_defaults <- list(...)
     if (any(names(override_defaults) %in% names(argslist))) {
@@ -152,6 +169,6 @@ spawnfile <- function(stock_data, start_year, end_year, ...) {
     return(call("gadgetfile", "spawnfile", component = list(argslist)))
 }
 
-standard.age.factor <- 'exp(-1*(%2$s.M+%3$s.init.F)*%1$s)*%2$s.init.%1$s'
-andy.age.factor <- '(%2$s.age.alpha * exp((-1)  * (((log(%1$s)) - %2$s.age.beta) * ((log(%1$s)) - %2$s.age.beta) / %2$s.age.gamma)) + %2$s.age.delta)'
-gamma.age.factor <- '(%1$s / ((%2$s.age.alpha - 1) * (%2$s.age.beta * %2$s.age.gamma))) ** (%2$s.age.alpha - 1) * exp(%2$s.age.alpha - 1 - (%1$s / (%2$s.age.beta * %2$s.age.gamma)))'
+standard.age.factor <- "exp(-1*(%2$s.M+%3$s.init.F)*%1$s)*%2$s.init.%1$s"
+andy.age.factor <- "(%2$s.age.alpha * exp((-1)  * (((log(%1$s)) - %2$s.age.beta) * ((log(%1$s)) - %2$s.age.beta) / %2$s.age.gamma)) + %2$s.age.delta)"
+gamma.age.factor <- "(%1$s / ((%2$s.age.alpha - 1) * (%2$s.age.beta * %2$s.age.gamma))) ** (%2$s.age.alpha - 1) * exp(%2$s.age.alpha - 1 - (%1$s / (%2$s.age.beta * %2$s.age.gamma)))"
